@@ -1,62 +1,103 @@
-const olTasks = document.getElementById("list-tasks");
+const btnCancel = document.getElementById("btn-cancel");
+const btnAdd = document.getElementById("btn-add");
+const inputAdd = document.getElementById("input-task");
 
 let tabTasks = [];
-
 function getAllTasks() {
   fetch("http://localhost:3000/tasks")
-    .then((response) => {
-      return response.json();
-    })
+    .then((res) => res.json())
     .then((data) => {
       tabTasks = data;
-      olTasks.innerHTML = "";
-      convertTasksToLi();
+      document.getElementById("list-tasks").innerHTML = "";
+      console.log(tabTasks);
+      convertTaskToLi();
     });
 }
 
-function convertTasksToLi() {
+getAllTasks();
+
+function toggleHidden() {
+  btnCancel.hidden = !btnCancel.hidden;
+  btnAdd.hidden = !btnAdd.hidden;
+  inputAdd.hidden = !inputAdd.hidden;
+}
+
+btnAdd.addEventListener("click", () => {
+  toggleHidden();
+});
+btnCancel.addEventListener("click", () => {
+  toggleHidden();
+});
+inputAdd.addEventListener("change", () => {
+  fetch("http://localhost:3000/tasks", {
+    method: "POST",
+    body: JSON.stringify({
+      checked: false,
+      text: inputAdd.value,
+      date: new Date(),
+    }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  })
+    .then((res) => {
+      alert("Task Added !");
+      getAllTasks();
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+  toggleHidden();
+});
+
+function convertTaskToLi() {
   for (const task of tabTasks) {
     const newLi = document.createElement("li");
     newLi.className = "list-group-item";
-    newLi.textContent = task.text;
-    if (task.checked) newLi.style.textDecoration = "line-through";
-    const newInput = document.createElement("input");
-    newInput.type = "checkbox";
-    newInput.checked = task.checked;
-    newInput.addEventListener("click", () => {
+
+    const newCheckbox = document.createElement("input");
+    newCheckbox.type = "checkbox";
+    newCheckbox.style.margin = "0 10px";
+    newCheckbox.checked = task.checked;
+    newCheckbox.addEventListener("click", () => {
       fetch(`http://localhost:3000/tasks/${task.id}`, {
         method: "PATCH",
         body: JSON.stringify({
           checked: !task.checked,
         }),
         headers: {
-          "Content-type": "application/json",
+          "Content-Type": "application/json",
         },
       })
         .then((res) => {
-          //  alert("Task modifié!");
           getAllTasks();
         })
         .catch((err) => {
           console.log(err);
         });
     });
-    newInput.style.margin = "0 10px";
-    newLi.appendChild(newInput);
 
-    let newSpan = document.createElement("span");
-    newSpan.className = "badge bg-secondary";
-    newSpan.textContent = `${new Date(task.date).getHours()}H ${new Date(
+    const newSpan = document.createElement("span");
+    newSpan.textContent = task.text;
+    newSpan.style.textDecoration = task.checked ? "line-through" : "null";
+
+    const newBadge = document.createElement("span");
+    newBadge.className = "badge bg-secondary";
+    newBadge.style.margin = "0 10px";
+    newBadge.textContent = `${new Date(task.date).getHours()}H ${new Date(
       task.date
     ).getMinutes()}Mn`;
+
+    newLi.appendChild(newCheckbox);
     newLi.appendChild(newSpan);
+    newLi.appendChild(newBadge);
     newLi.addEventListener("dblclick", () => {
-      if (confirm("Etes-vous sur de vouloir supprimer ce task?")) {
+      if (confirm("Etes vous sur de vouloir supprimer ce task ?")) {
         fetch(`http://localhost:3000/tasks/${task.id}`, {
           method: "DELETE",
         })
           .then((res) => {
-            //  alert("Task modifié!");
+            alert("Task Supprimé!");
             getAllTasks();
           })
           .catch((err) => {
@@ -64,65 +105,6 @@ function convertTasksToLi() {
           });
       }
     });
-
-    olTasks.appendChild(newLi);
+    document.getElementById("list-tasks").appendChild(newLi);
   }
 }
-
-getAllTasks();
-
-function toggleHiddenButtons() {
-  //console.log(document.getElementById("btn-add").hidden);
-  document.getElementById("btn-add").hidden =
-    !document.getElementById("btn-add").hidden;
-  document.getElementById("btn-cancel").hidden =
-    !document.getElementById("btn-add").hidden;
-  document.getElementById("input-task").hidden =
-    !document.getElementById("btn-add").hidden;
-}
-
-document.getElementById("btn-add").addEventListener("click", () => {
-  toggleHiddenButtons();
-});
-document.getElementById("btn-cancel").addEventListener("click", () => {
-  toggleHiddenButtons();
-});
-document.getElementById("input-task").addEventListener("change", () => {
-  fetch("http://localhost:3000/tasks", {
-    method: "POST",
-    body: JSON.stringify({
-      checked: false,
-      date: new Date(),
-      text: document.getElementById("input-task").value,
-    }),
-    headers: {
-      "Content-type": "application/json",
-    },
-  })
-    .then((response) => {
-      alert("Task ajouté !");
-      getAllTasks();
-    })
-    .catch((err) => {
-      console.log("Probléme avec notre API");
-    });
-  toggleHiddenButtons();
-});
-
-// fetch("http://localhost:3000/tasks", {
-//   method: "POST",
-//   body: JSON.stringify({
-//     checked: false,
-//     date: new Date(),
-//     text: "Task 1",
-//   }),
-//   headers: {
-//     "Content-type": "application/json",
-//   },
-// })
-//   .then((response) => {
-//     console.log("Task ajouté !");
-//   })
-//   .catch((err) => {
-//     console.log("Probléme avec notre API");
-//   });
